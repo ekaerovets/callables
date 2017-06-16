@@ -25,7 +25,6 @@ public class WorkerThread implements Runnable {
         while (true) {
 
             long now = getNow();
-            long nextTaskIn = Long.MAX_VALUE;
 
             while (true) {
                 Task t = queue.peek();
@@ -33,7 +32,6 @@ public class WorkerThread implements Runnable {
                     break;
                 }
                 if (t.getTimeNanos() > now) {
-                    nextTaskIn = t.getTimeNanos() - now;
                     break;
                 }
                 Task poll = queue.poll();
@@ -45,11 +43,16 @@ public class WorkerThread implements Runnable {
                 now = getNow();
             }
 
-            long sleepMs = nextTaskIn / 1_000_000 + 1;
-
             try {
                 synchronized (lock) {
-                    lock.wait(sleepMs);
+                    // If worker is notified while not waiting, the notification will be lost.
+                    // Another check within synchronized block fixes the problem.
+                    Task nextTask = queue.peek();
+                    long nextTaskIn = nextTask == null ? Long.MAX_VALUE : nextTask.getTimeNanos() - now;
+                    long sleepMs = nextTaskIn / 1_000_000 + 1;
+                    if (sleepMs > 0) {
+                        lock.wait(sleepMs);
+                    }
                 }
             } catch (InterruptedException ignore) {
 

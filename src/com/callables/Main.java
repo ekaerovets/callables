@@ -31,7 +31,7 @@ public class Main {
 
         // add a few tasks while there are some tasks in the queue
         sleepUninterruptedly(1500);
-        addTask(1550, "1500 / 2");
+        addTask(1550, "1550 / 2");
         addTask(1900, "1900 / 2");
         addTask(2100, "2100 / 2");
 
